@@ -1,5 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
+import cors from "cors";
 import { PORT } from "./config.js";
 import tiresController from "./controllers/tires-controller.js";
 import sizesController from "./controllers/sizes-controller.js";
@@ -8,7 +9,6 @@ import passport from "passport";
 import usersController from "./controllers/users-controller.js";
 
 const app = express();
-const cors = require('cors');
 
 // CORS Policy and Body Parser Third-party Middleware
 app.use(cors(), bodyParser.json());
