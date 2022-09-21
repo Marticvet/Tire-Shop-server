@@ -90,8 +90,6 @@ usersController
             createData
         );
 
-        console.log(error, `da`);
-
         if (error === serviceErrors.DUPLICATE_RECORD) {
             res.status(409).send({ message: `Email's already used!` });
         } else {
@@ -129,6 +127,7 @@ usersController
                     firstName: user.first_name,
                     lastName: user.last_name,
                 },
+                message: `Successfully logged in profile`,
             });
         }
     })
