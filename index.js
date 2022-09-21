@@ -11,7 +11,8 @@ import usersController from "./controllers/users-controller.js";
 const app = express();
 
 // CORS Policy and Body Parser Third-party Middleware
-app.use(cors(), bodyParser.json());
+// app.use(cors(), bodyParser.json());
+app.use(bodyParser.json());
 app.use(passport.initialize());
 
 app.use("/tires/manufacturers", tiresController);
