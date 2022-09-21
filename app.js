@@ -19,10 +19,6 @@ app.use("/sizes", sizesController);
 app.use("/searchBy", searchController);
 app.use('/users', usersController);
 
-app.get('/', (req, res) => {
-    res.send({message: 'sirenie'})
-})
-
 app.use((err, req, res, next) => {
     res.status(500).send({
         message:
