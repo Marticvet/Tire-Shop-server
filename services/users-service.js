@@ -54,7 +54,7 @@ const getUserCartItems = (usersData) => {
         g.rating AS grip_rating,
         ct.name AS car_type
     FROM
-        tires_shop_idea2.user_basket AS user_basket
+        user_basket AS user_basket
             LEFT JOIN
         user ON user.user_id = user_basket.user_id
             LEFT JOIN
@@ -170,7 +170,7 @@ const editItemQuantity = () => {
         g.rating AS grip_rating,
         ct.name AS car_type
     FROM
-        tires_shop_idea2.user_basket AS user_basket
+        user_basket AS user_basket
             LEFT JOIN
         user ON user.user_id = user_basket.user_id
             LEFT JOIN
