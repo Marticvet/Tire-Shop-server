@@ -14,13 +14,6 @@ const app = express();
 app.use(cors(), bodyParser.json());
 app.use(passport.initialize());
 
-app.use((req,res, next)=>{
-    res.setHeader('Access-Control-Allow-Origin',"http://localhost:3000");
-    res.setHeader('Access-Control-Allow-Headers',"*");
-    res.header('Access-Control-Allow-Credentials', true);
-    next();
-});
-
 app.use("/tires/manufacturers", tiresController);
 app.use("/sizes", sizesController);
 app.use("/searchBy", searchController);
