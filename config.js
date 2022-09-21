@@ -5,7 +5,7 @@ export const DB_CONFIG = {
     database: "heroku_bb33a07d67d9095",
 };
 
-export const PORT = 3030;
+export const PORT = 8000;
 
 export const PRIVATE_KEY = 'secret_key';
 
