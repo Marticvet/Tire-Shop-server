@@ -30,4 +30,4 @@ app.all("*", (req, res) => {
     res.status(404).send({ message: "Resource not found!" });
 });
 
-app.listen(80, () => console.log(`Listening on port 80`));
+app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
