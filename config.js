@@ -1,9 +1,8 @@
 export const DB_CONFIG = {
-    host: "localhost",
-    port: '3306',
-    user: "root",
-    password: "Marticvet",
-    database: "tires_shop_idea2",
+    host: "eu-cdbr-west-03.cleardb.net",
+    user: "bfc9aff4611f84",
+    password: "ce771c9d",
+    database: "heroku_bb33a07d67d9095",
 };
 
 export const PORT = 3030;
