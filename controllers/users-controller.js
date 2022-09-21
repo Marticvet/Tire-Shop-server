@@ -90,6 +90,8 @@ usersController
             createData
         );
 
+        console.log(error, `da`);
+
         if (error === serviceErrors.DUPLICATE_RECORD) {
             res.status(409).send({ message: `Email's already used!` });
         } else {
