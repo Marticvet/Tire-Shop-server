@@ -26,6 +26,10 @@ usersController
             res.status(404).send({
                 message: `User's items with such ID not found!`,
             });
+        } else if (models.length === 0) {
+            res.status(200).send({
+                message: `User's shopping cart is empty.`,
+            });
         } else {
             res.status(200).send(models);
         }

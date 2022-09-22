@@ -86,8 +86,8 @@ const getUserCartItems = (usersData) => {
 
         if (models && models.length === 0) {
             return {
-                error: serviceErrors.RECORD_NOT_FOUND,
-                models: null,
+                error: null,
+                models: [],
             };
         } else if (!models) {
             return {
