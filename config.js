@@ -1,8 +1,8 @@
 export const DB_CONFIG = {
     host: "eu-cdbr-west-03.cleardb.net",
-    user: "bfc9aff4611f84",
-    password: "ce771c9d",
-    database: "heroku_bb33a07d67d9095",
+    user: "b0a625fd6ea819",
+    password: "750a2f29",
+    database: "heroku_c3d5c3714cd0586",
 };
 
 export const PORT = 8000;
