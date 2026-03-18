@@ -37,8 +37,7 @@ const searchedBy = (searchData) => {
             grip AS g ON g.id = t.wet_traction_rating
                 LEFT JOIN
             car_type AS ct ON ct.id = t.car_type
-        where tm.name like '%${modelName}%' 
-            group by tire_model_id`;
+        where tm.name like '%${modelName}%'`;
 
         const models = await searchData.searchedBy(
             modelName,

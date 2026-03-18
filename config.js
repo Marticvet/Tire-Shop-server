@@ -1,13 +1,14 @@
 export const DB_CONFIG = {
-    host: "eu-cdbr-west-03.cleardb.net",
-    user: "b0a625fd6ea819",
-    password: "750a2f29",
-    database: "heroku_c3d5c3714cd0586",
+  host: process.env.DB_HOST || "mysql",
+  port: Number(process.env.DB_PORT) || 3306,
+  user: process.env.DB_USER || "marticvet",
+  password: process.env.DB_PASSWORD || "Marticvet7927@",
+  database: process.env.DB_NAME || "tire_shop_idea2",
 };
 
-export const PORT = 8000;
+export const PORT = process.env.PORT || 3030;
 
 export const PRIVATE_KEY = 'secret_key';
 
 // 60 mins * 60 secs
-export const TOKEN_LIFETIME = 60 * 60; 
+export const TOKEN_LIFETIME = 60 * 60;

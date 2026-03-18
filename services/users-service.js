@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import serviceErrors from "../services/service-errors,.js";
 
 const getAllUsers = async () => {
-    const sql = "SELECT * FROM USER";
+    const sql = "SELECT * FROM `user`";
     return await new Promise((resolve) => {
         pool.query(sql, (error, result) => {
             if (error) {
@@ -16,7 +16,7 @@ const getAllUsers = async () => {
 
 const getUserCartItems = (usersData) => {
     return async (userId) => {
-        const getUserById = "SELECT user_id FROM USER where user.user_id = ?";
+        const getUserById = "SELECT user_id FROM `user` WHERE `user`.user_id = ?";
 
         const user_id = await usersData.getBy(getUserById, userId);
 
@@ -257,7 +257,7 @@ const signInUser = (usersData) => {
 const createUser = (usersData) => {
     return async (userCreate) => {
         const { email, password, first_name, last_name } = userCreate;
-        const sql = "SELECT user_id, email FROM USER where user.email = ?";
+        const sql = "SELECT user_id, email FROM `user` WHERE `user`.email = ?";
 
         const existingUser = await usersData.getBy(sql, email);
 
@@ -283,8 +283,7 @@ const createUser = (usersData) => {
 const updateUser = (usersData) => {
     return async (id, userUpdate) => {
         const { email, password, first_name, last_name } = userUpdate;
-        const getUserById =
-            "SELECT user_id, email FROM USER where user.user_id = ?";
+        const getUserById = "SELECT user_id, email FROM `user` WHERE `user`.user_id = ?";
 
         const getUser = await usersData.getBy(getUserById, id);
 
@@ -295,8 +294,8 @@ const updateUser = (usersData) => {
             };
         }
 
-        const getUserByEmail = "SELECT * FROM USER where user.email = ?";
-
+        const getUserByEmail = "SELECT * FROM `user` WHERE `user`.email = ?";
+        
         if (!email && !!(await usersData.getBy(getUserByEmail, email))) {
             return {
                 error: serviceErrors.DUPLICATE_RECORD,

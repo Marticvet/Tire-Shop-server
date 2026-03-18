@@ -66,9 +66,7 @@ const getAllModelsByManufacturer = (tiresData) => {
         grip AS g ON g.id = t.wet_traction_rating
             LEFT JOIN
         car_type AS ct ON ct.id = t.car_type
-    WHERE
-        m.name = ?
-        group by tire_model_id`;
+    WHERE m.name = ?`;
 
         const models = await tiresData.searchedBy(sql, name);
 
