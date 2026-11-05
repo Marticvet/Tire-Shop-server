@@ -1,62 +1,39 @@
-import express from "express";
-import bodyParser from "body-parser";
-import cors from "cors";
-import { PORT } from "./config.js";
-import tiresController from "./controllers/tires-controller.js";
-import sizesController from "./controllers/sizes-controller.js";
-import searchController from "./controllers/search-controller.js";
-import passport from "passport";
-import usersController from "./controllers/users-controller.js";
+import express from 'express';
+import bodyParser from 'body-parser';
+import cors from 'cors';
+import passport from 'passport';
+import { PORT } from './config.js';
+import tiresController from './controllers/tires-controller.js';
+import sizesController from './controllers/sizes-controller.js';
+import searchController from './controllers/search-controller.js';
+import usersController from './controllers/users-controller.js';
 
 const app = express();
 
-// CORS Policy and Body Parser Third-party Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(passport.initialize());
 
-// app.use(function(req, res, next) {
-//     res.header("Access-Control-Allow-Origin", '*');
-//     res.header("Access-Control-Allow-Credentials", true);
-//     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-//     res.header("Access-Control-Allow-Headers", 'Origin,X-Requested-With,Content-Type,Accept,content-type,application/json');
-//     next();
-// });
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', service: 'tire-shop-api' });
+});
 
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*")
-    res.header(
-      "Access-Control-Allow-Headers",
-      "Origin, X-Requested, Content-Type, Accept Authorization"
-    )
-    if (req.method === "OPTIONS") {
-      res.header(
-        "Access-Control-Allow-Methods",
-        "POST, PUT, PATCH, GET, DELETE"
-      )
-      return res.status(200).json({})
-    }
-    next()
-  })
-
-app.use("/tires/manufacturers", tiresController);
-app.use("/sizes", sizesController);
-app.use("/searchBy", searchController);
+app.use('/tires/manufacturers', tiresController);
+app.use('/sizes', sizesController);
+app.use('/searchBy', searchController);
 app.use('/users', usersController);
 
-app.use((err, req, res, next) => {
-    res.status(500).send({
-        message:
-            "An unexpected error occurred, our developers are working hard to resolve it.",
-    });
+app.all('*', (_req, res) => {
+  res.status(404).json({ message: 'Resource not found!' });
 });
 
-app.all("*", (req, res) => {
-    res.status(404).send({ message: "Resource not found!" });
+app.use((err, _req, res, _next) => {
+  console.error(err);
+  res.status(500).json({
+    message: 'An unexpected error occurred, our developers are working hard to resolve it.',
+  });
 });
 
-const port = process.env.PORT || PORT || 3030;
-
-app.listen(port, "0.0.0.0", () => {
-    console.log(`Tire Shop API running on port ${port}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Tire Shop API running on port ${PORT}`);
 });
