@@ -1,24 +1,28 @@
-FROM node:24-bookworm-slim AS build
-
+# Build the existing Express application.
+FROM node:24-bookworm-slim AS app-build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY . .
 
+# Run Express and a pre-seeded local MySQL instance in the SAME container.
+# This is for a disposable portfolio/demo database, not production data.
 FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
-
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        mysql-server ca-certificates libstdc++6 libatomic1 bash && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm -rf /var/lib/mysql/*
+      mysql-server ca-certificates libstdc++6 libatomic1 bash && \
+    rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /usr/local/bin/node /usr/local/bin/node
-COPY --from=build /app /app
-
+COPY --from=app-build /usr/local/bin/node /usr/local/bin/node
+COPY --from=app-build /app /app
 WORKDIR /app
-RUN chmod +x /app/start-render.sh
+
+# IMPORTANT: do not remove /var/lib/mysql after installing MySQL.
+# Create the database and import the fixed demo dataset while BUILDING,
+# not every time Render starts or wakes the container.
+RUN chmod +x /app/seed-db.sh /app/start-render.sh && \
+    /app/seed-db.sh
 
 EXPOSE 3030
 CMD ["/app/start-render.sh"]

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-: "${DB_PASSWORD:?Set DB_PASSWORD in your environment}"
-: "${JWT_SECRET:?Set JWT_SECRET in your environment}"
+: "${DB_PASSWORD:?Set DB_PASSWORD in Render's Environment tab}"
+: "${JWT_SECRET:?Set JWT_SECRET in Render's Environment tab}"
 
 export PORT="${PORT:-3030}"
 export DB_HOST=127.0.0.1
@@ -10,44 +10,35 @@ export DB_PORT=3306
 export DB_NAME="${DB_NAME:-tires_shop_idea2}"
 export DB_USER="${DB_USER:-tire_app}"
 
-# These values are interpolated into the SQL below.
-[[ "$DB_NAME" =~ ^[A-Za-z0-9_]+$ ]] || { echo 'Invalid DB_NAME'; exit 1; }
-[[ "$DB_USER" =~ ^[A-Za-z0-9_]+$ ]] || { echo 'Invalid DB_USER'; exit 1; }
+# Restrict SQL-interpolated identifiers and password to safe values.
+[[ "$DB_NAME" =~ ^[A-Za-z0-9_]+$ ]] || { echo 'Invalid DB_NAME' >&2; exit 1; }
+[[ "$DB_USER" =~ ^[A-Za-z0-9_]+$ ]] || { echo 'Invalid DB_USER' >&2; exit 1; }
 [[ "$DB_PASSWORD" =~ ^[A-Za-z0-9_-]{16,}$ ]] || {
-  echo 'DB_PASSWORD must be 16+ characters, using letters, numbers, _ or -'
+  echo 'DB_PASSWORD must have at least 16 letters, digits, _ or -' >&2
   exit 1
 }
 
-SQL_DUMP=/app/db/tires_shop_idea2.sql
-[[ -s "$SQL_DUMP" ]] || { echo "Missing or empty SQL dump: $SQL_DUMP"; exit 1; }
+[[ -d /var/lib/mysql/mysql ]] || {
+  echo 'Pre-seeded MySQL data missing from image. Check Docker build logs.' >&2
+  exit 1
+}
 
-mkdir -p /run/mysqld /var/lib/mysql
-chown -R mysql:mysql /run/mysqld /var/lib/mysql
-: > /tmp/mysql-runtime.log
-: > /tmp/mysql-stdout.log
-chown mysql:mysql /tmp/mysql-runtime.log /tmp/mysql-stdout.log
+mkdir -p /run/mysqld
+chown mysql:mysql /run/mysqld
+touch /tmp/mysql-runtime.log
+chown mysql:mysql /tmp/mysql-runtime.log
 
-# Render Free has an ephemeral filesystem. Initialize only when needed.
-if [[ ! -d /var/lib/mysql/mysql ]]; then
-  echo 'Initializing MySQL data directory...'
-  if ! mysqld --initialize-insecure \
-    --user=mysql \
-    --datadir=/var/lib/mysql \
-    --innodb-buffer-pool-size=32M \
-    --log-error=/tmp/mysql-runtime.log; then
-    echo 'MySQL initialization failed:'
-    tail -n 100 /tmp/mysql-runtime.log || true
-    exit 1
-  fi
-fi
+mysql_socket=/run/mysqld/mysqld.sock
+mysql_cmd=(mysql --protocol=socket --socket="$mysql_socket" -u root)
 
-echo 'Starting MySQL...'
+# Start the pre-initialized database; no runtime initialization or SQL import.
+echo 'Starting pre-seeded MySQL...'
 mysqld \
   --user=mysql \
   --datadir=/var/lib/mysql \
   --bind-address=127.0.0.1 \
   --port=3306 \
-  --socket=/run/mysqld/mysqld.sock \
+  --socket="$mysql_socket" \
   --pid-file=/run/mysqld/mysqld.pid \
   --log-error=/tmp/mysql-runtime.log \
   --innodb-buffer-pool-size=32M \
@@ -56,77 +47,64 @@ mysqld \
   --max-connections=10 \
   --table-open-cache=128 \
   --skip-log-bin \
-  --mysqlx=OFF \
-  > /tmp/mysql-stdout.log 2>&1 &
-MYSQL_PID=$!
-NODE_PID=''
+  --mysqlx=OFF &
+mysql_pid=$!
+node_pid=''
 
 cleanup() {
-  if [[ -n "$NODE_PID" ]]; then kill "$NODE_PID" 2>/dev/null || true; fi
-  kill "$MYSQL_PID" 2>/dev/null || true
+  if [[ -n "$node_pid" ]]; then kill "$node_pid" 2>/dev/null || true; fi
+  kill "$mysql_pid" 2>/dev/null || true
   wait 2>/dev/null || true
 }
 trap cleanup EXIT
 trap 'exit 143' TERM
 trap 'exit 130' INT
 
-echo 'Waiting for MySQL...'
-READY=false
+echo 'Waiting for MySQL socket...'
+ready=false
 for i in $(seq 1 120); do
-  if mysql --protocol=socket \
-      --socket=/run/mysqld/mysqld.sock \
-      -u root -e 'SELECT 1' >/dev/null 2>&1; then
-    READY=true
+  if "${mysql_cmd[@]}" -e 'SELECT 1' >/dev/null 2>&1; then
+    ready=true
     break
   fi
-  if ! kill -0 "$MYSQL_PID" 2>/dev/null; then break; fi
+  if (( i % 10 == 0 )); then
+    echo "MySQL still starting (attempt $i/120)..."
+    tail -n 5 /tmp/mysql-runtime.log || true
+  fi
+  if ! kill -0 "$mysql_pid" 2>/dev/null; then break; fi
   sleep 1
 done
 
-if [[ "$READY" != true ]]; then
-  echo 'ERROR: MySQL failed to become ready.'
-  if ! kill -0 "$MYSQL_PID" 2>/dev/null; then
+if [[ "$ready" != true ]]; then
+  echo 'ERROR: MySQL did not become ready.' >&2
+  echo '=== MYSQL ERROR LOG ===' >&2
+  tail -n 100 /tmp/mysql-runtime.log >&2 || true
+  echo '=== MEMORY EVENTS ===' >&2
+  cat /sys/fs/cgroup/memory.events >&2 2>/dev/null || true
+  if ! kill -0 "$mysql_pid" 2>/dev/null; then
     set +e
-    wait "$MYSQL_PID"
-    MYSQL_EXIT_CODE=$?
+    wait "$mysql_pid"
+    exit_code=$?
     set -e
-    echo "MySQL exit code: $MYSQL_EXIT_CODE"
-  else
-    echo 'MySQL is running but is not accepting connections.'
+    echo "MySQL process exit code: $exit_code" >&2
   fi
-  echo '=== MYSQL RUNTIME LOG ==='
-  tail -n 100 /tmp/mysql-runtime.log || true
-  echo '=== MYSQL STDOUT ==='
-  tail -n 100 /tmp/mysql-stdout.log || true
-  echo '=== MEMORY EVENTS ==='
-  cat /sys/fs/cgroup/memory.events 2>/dev/null || true
   exit 1
 fi
 
-echo 'Preparing application database...'
-mysql --protocol=socket --socket=/run/mysqld/mysqld.sock -u root <<SQL
-CREATE DATABASE IF NOT EXISTS \`$DB_NAME\`;
+echo 'MySQL is ready. Creating application user...'
+"${mysql_cmd[@]}" <<SQL
 CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$DB_PASSWORD';
 ALTER USER '$DB_USER'@'%' IDENTIFIED BY '$DB_PASSWORD';
 GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'%';
 SQL
 
-echo 'Importing Tire Shop SQL dump...'
-if ! mysql --protocol=socket \
-    --socket=/run/mysqld/mysqld.sock \
-    -u root "$DB_NAME" < "$SQL_DUMP"; then
-  echo 'ERROR: SQL import failed.'
-  exit 1
-fi
-
-echo 'Starting Express...'
+echo 'Starting Express on port' "$PORT"
 node /app/index.js &
-NODE_PID=$!
+node_pid=$!
 
-# Keep the container alive while both processes are healthy.
 set +e
-wait -n "$MYSQL_PID" "$NODE_PID"
-EXIT_CODE=$?
+wait -n "$mysql_pid" "$node_pid"
+exit_code=$?
 set -e
-echo "A service stopped (exit code: $EXIT_CODE)."
-exit "$EXIT_CODE"
+echo "MySQL or Express stopped (exit code $exit_code)." >&2
+exit "$exit_code"
