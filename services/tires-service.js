@@ -1,17 +1,6 @@
-import pool from "../data/pool.js";
 import serviceErrors from "./service-errors,.js";
 
-const getAllManufacturers = async (tiresData) => {
-    const sql = "SELECT * FROM manufacturer";
-    return await new Promise((resolve) => {
-        pool.query(sql, async (error, results) => {
-            if (error) {
-                throw error;
-            }
-            resolve(results);
-        });
-    });
-};
+const getAllManufacturers = (tiresData) => tiresData.getAllManufacturers();
 
 const getManufacturerByName = (tiresData) => {
     return async (name) => {

@@ -5,61 +5,59 @@ import serviceErrors from "../services/service-errors,.js";
 
 const tiresController = express.Router();
 
+// Express 4 does not automatically forward rejected async handlers to error middleware.
+const asyncHandler = (handler) => (req, res, next) => {
+    Promise.resolve()
+        .then(() => handler(req, res, next))
+        .catch(next);
+};
+
 tiresController
-    // get all tires manufacturers
-    .get("/", async (req, res) => {
-        res.status(200).send(await tiresService.getAllManufacturers(tiresData));
-    })
+    // Get all tire manufacturers.
+    .get("/", asyncHandler(async (req, res) => {
+        const manufacturers = await tiresService.getAllManufacturers(tiresData);
+        res.status(200).send(manufacturers);
+    }))
 
-    // get manufacturer by name
-    .get("/:name", async (req, res) => {
+    // Get manufacturer by name.
+    .get("/:name", asyncHandler(async (req, res) => {
         const { name } = req.params;
-
         const { error, manufacturer } =
             await tiresService.getManufacturerByName(tiresData)(name);
 
         if (error === serviceErrors.RECORD_NOT_FOUND) {
-            res.status(404).send({ message: "Manufacturer not found!" });
-        } else {
-            res.status(200).send(manufacturer);
+            return res.status(404).send({ message: "Manufacturer not found!" });
         }
-    })
 
-    // get all models by manufacturer
-    .get("/:name/tire-models", async (req, res) => {
+        return res.status(200).send(manufacturer);
+    }))
+
+    // Get all models by manufacturer.
+    .get("/:name/tire-models", asyncHandler(async (req, res) => {
         const { name } = req.params;
-
-        const { error, models } = await tiresService.getAllModelsByManufacturer(
-            tiresData
-        )(name);
+        const { error, models } =
+            await tiresService.getAllModelsByManufacturer(tiresData)(name);
 
         if (error === serviceErrors.RECORD_NOT_FOUND) {
-            res.status(404).send({
-                message: `Models with manufacturer ${
-                    name[0].toUpperCase() + name.slice(1)
-                } not found!`,
+            return res.status(404).send({
+                message: `Models with manufacturer ${name[0].toUpperCase() + name.slice(1)} not found!`,
             });
-        } else {
-            res.status(200).send(models);
         }
-    })
 
-    // get manufacturer model by tireId and all available sizes
-    .get("/:name/tire-model/:tireId", async (req, res) => {
+        return res.status(200).send(models);
+    }))
+
+    // Get one tire model by ID and all available sizes.
+    .get("/:name/tire-model/:tireId", asyncHandler(async (req, res) => {
         const { name, tireId } = req.params;
-
-        const { error, model } = await tiresService.getManufacturerModelById(
-            tiresData
-        )(name, tireId);
+        const { error, model } =
+            await tiresService.getManufacturerModelById(tiresData)(name, tireId);
 
         if (error === serviceErrors.RECORD_NOT_FOUND) {
-            res.status(404).send({
-                message: `Model not found!`,
-            });
-        } else {
-            res.status(200).send(model);
-
+            return res.status(404).send({ message: "Model not found!" });
         }
-    });
+
+        return res.status(200).send(model);
+    }));
 
 export default tiresController;
