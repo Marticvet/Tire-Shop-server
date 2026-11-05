@@ -55,4 +55,15 @@ app.all("*", (req, res) => {
     res.status(404).send({ message: "Resource not found!" });
 });
 
-app.listen(process.env.PORT || PORT, () => console.log(`App's working`));
+const port = process.env.PORT || PORT || 3030;
+
+app.listen(port, "0.0.0.0", () => {
+    console.log(`Tire Shop API running on port ${port}`);
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).json({
+      status: "ok",
+      service: "tire-shop-api"
+  });
+});
