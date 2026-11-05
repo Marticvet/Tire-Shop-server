@@ -56,7 +56,24 @@ for i in $(seq 1 120); do
 done
 
 if [ "$READY" != true ]; then
-  echo "MySQL failed to initialize"
+  echo "ERROR: MySQL failed to become ready."
+
+  echo "=== MYSQL ERROR LOG ==="
+  tail -n 100 /var/log/mysql/error.log 2>/dev/null || true
+
+  echo "=== MYSQL PROCESS STATUS ==="
+  if kill -0 "$MYSQL_PID" 2>/dev/null; then
+    echo "MySQL process is still running"
+  else
+    echo "MySQL process stopped"
+  fi
+
+  echo "=== MEMORY LIMIT ==="
+  cat /sys/fs/cgroup/memory.max 2>/dev/null || true
+
+  echo "=== MEMORY EVENTS ==="
+  cat /sys/fs/cgroup/memory.events 2>/dev/null || true
+
   exit 1
 fi
 

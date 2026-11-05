@@ -60,10 +60,3 @@ const port = process.env.PORT || PORT || 3030;
 app.listen(port, "0.0.0.0", () => {
     console.log(`Tire Shop API running on port ${port}`);
 });
-
-app.get("/health", (req, res) => {
-  res.status(200).json({
-      status: "ok",
-      service: "tire-shop-api"
-  });
-});
